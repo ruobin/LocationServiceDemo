@@ -101,7 +101,8 @@ public class MainActivity extends AppCompatActivity {
 
         LocationListener locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
-                // Called when a new location is found by the network location provider.
+                // Called when a
+                // new location is found by the network location provider.
                 Log.i(TAG, "onLocationChanged:" + location.getLatitude());
                 locationLabel.setText("onLocationChanged, latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
             }
