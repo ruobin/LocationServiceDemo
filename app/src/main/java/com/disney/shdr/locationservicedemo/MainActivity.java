@@ -1,6 +1,8 @@
 package com.disney.shdr.locationservicedemo;
 
 import android.Manifest;
+import android.app.job.JobInfo;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -13,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.app.job.JobScheduler;
 
 import org.w3c.dom.Text;
 
@@ -25,11 +28,15 @@ public class MainActivity extends AppCompatActivity {
     private TextView NetworkLocationLabel;
     private TextView PassiveLocationLabel;
     LocationManager locationManager;
+    private JobScheduler jobScheduler;
+    private static int JOB_ID = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        this.requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
 
         GPSLocationLabel = this.findViewById(R.id.latest_GPS_location);
         NetworkLocationLabel = this.findViewById(R.id.latest_network_location);
@@ -60,10 +67,28 @@ public class MainActivity extends AppCompatActivity {
         });
 
         locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location != null) {
-            GPSLocationLabel.setText("onLocationChanged, latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (location != null) {
+                GPSLocationLabel.setText("onLocationChanged, latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
+            }
+
+            startLocationJobSchedule();
         }
+
+    }
+
+    private void startLocationJobSchedule() {
+
+        jobScheduler = (JobScheduler) this.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+        JobInfo myLongJob = new JobInfo.Builder(
+                JOB_ID,
+                new ComponentName(this, LocationJobService.class)
+        ).setPeriodic(10000)
+                .build();
+
+        jobScheduler.schedule(myLongJob);
     }
 
     public void getCurrentGPSLocation(String locationProvider, final TextView locationLabel) {
@@ -95,18 +120,15 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(locationProvider, 0, 0, locationListener);
         }
 
-        locationManager.requestLocationUpdates(locationProvider, 0, 0, locationListener);
-
     }
+
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+//        LocationJobService.sendLocalNotification(this, "Permission Needed", permissions.toString());
+    }
+
 }
