@@ -20,92 +20,84 @@ import android.support.v4.app.NotificationCompat;
 
 public class LocationJobService extends JobService {
 
+    private static int NOTIFICATION_ID = 1000;
+
+    private static int MINIMUM_LOCATION_UPDATES_TIME_INTERVAL = 30 * 1000;
+
+    private static int MINIMUM_LOCATION_UPDATES_DISTANCE = 50;
 
     @Override
-    public boolean onStartJob(JobParameters params) {
-        sendLocalNotification(getApplicationContext(), "Location Job", "on start");
-        getCurrentGPSLocation(LocationManager.NETWORK_PROVIDER, getApplicationContext());
-        getCurrentGPSLocation(LocationManager.GPS_PROVIDER, getApplicationContext());
+    public boolean onStartJob(final JobParameters jobParameters) {
+        LocalNotificationHelper.sendLocalNotification(getApplicationContext(), "Location Job", "on start");
 
-        return false;
+        getCurrentLocation(LocationManager.NETWORK_PROVIDER, getApplicationContext(), jobParameters);
+        getCurrentLocation(LocationManager.GPS_PROVIDER, getApplicationContext(), jobParameters);
+        getCurrentLocation(LocationManager.PASSIVE_PROVIDER, getApplicationContext(), jobParameters);
+
+        return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters params) {
-        sendLocalNotification(getApplicationContext(), "Location Job", "on stop");
+        LocalNotificationHelper.sendLocalNotification(getApplicationContext(), "Location Job", "on stop");
         return false;
     }
 
-    public static void sendLocalNotification(Context context, String title, String content) {
-        Intent intent = new Intent(context, MainActivity.class);
-        PendingIntent contentIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        NotificationCompat.Builder b = new NotificationCompat.Builder(context);
-        String CHANNEL_ID = "my_channel_01";// The id of the channel.
-        int importance = NotificationManager.IMPORTANCE_HIGH;
-        NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, "default notification channel", importance);
-
-        b.setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_ALL)
-                .setWhen(System.currentTimeMillis())
-                .setSmallIcon(R.drawable.ic_launcher_background)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setDefaults(Notification.DEFAULT_LIGHTS| Notification.DEFAULT_SOUND)
-                .setContentIntent(contentIntent)
-                .setChannelId(CHANNEL_ID)
-                .setContentInfo("Info");
-
-
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.createNotificationChannel(mChannel);
-        notificationManager.notify(1, b.build());
-    }
-
-    public void getCurrentGPSLocation(String locationProvider, final Context context) {
+    public void getCurrentLocation(final String locationProvider, final Context context, final JobParameters params) {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             return;
         }
 
-        LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
         Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         if (location != null) {
-            sendLocalNotification(context, "Job Started", "last location, latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
+            LocalNotificationHelper.sendLocalNotification(context, "Last Known Location", "latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
         }
 
         boolean enabled = locationManager.isProviderEnabled(locationProvider);
         if (!enabled) {
-            sendLocalNotification(context,  "Warning", "Provider is disabled!");
+            LocalNotificationHelper.sendLocalNotification(context,  "Warning", "Provider is disabled!");
             return;
         }
 
         LocationListener locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
+                locationManager.removeUpdates(this);
                 // Called when a new location is found by the network location provider.
-                sendLocalNotification(context, "onLocationChanged", "latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
+                LocalNotificationHelper.sendLocalNotification(context, locationProvider + " provider: onLocationChanged", "latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
+
+                jobFinished(params, true);
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {
-                sendLocalNotification(context, "onLocationChanged", "onStatusChanged:" + provider + status + extras.toString());
+//                LocalNotificationHelper.sendLocalNotification(context, "onStatusChanged", "onStatusChanged:" + provider + status + extras.toString());
             }
 
             public void onProviderEnabled(String provider) {
-                sendLocalNotification(context, "onLocationChanged", "onProviderEnabled:" + provider);
+//                LocalNotificationHelper.sendLocalNotification(context, "onProviderEnabled", "onProviderEnabled:" + provider);
             }
 
             public void onProviderDisabled(String provider) {
-                sendLocalNotification(context, "onLocationChanged", "onProviderDisabled:" + provider);
+                LocalNotificationHelper.sendLocalNotification(context, "onProviderDisabled", "onProviderDisabled:" + provider);
             }
         };
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        long minTime = MINIMUM_LOCATION_UPDATES_TIME_INTERVAL;
+        float minDistance = MINIMUM_LOCATION_UPDATES_DISTANCE;
 
-            return;
+        if (locationProvider.equalsIgnoreCase(LocationManager.NETWORK_PROVIDER)) {
+            minTime = MINIMUM_LOCATION_UPDATES_TIME_INTERVAL;
+            minDistance = 0;
+        } else if (locationProvider.equalsIgnoreCase(LocationManager.GPS_PROVIDER)) {
+            minTime = 15 * 60 * 1000; // 15 minutes
+            minDistance = 0;
+        } else if (locationProvider.equalsIgnoreCase(LocationManager.PASSIVE_PROVIDER)) {
+            minTime = MINIMUM_LOCATION_UPDATES_TIME_INTERVAL;
+            minDistance = 0;
         }
-
-        locationManager.requestLocationUpdates(locationProvider, 0, 0, locationListener);
+        locationManager.requestLocationUpdates(locationProvider, minTime, minDistance, locationListener);
 
     }
 

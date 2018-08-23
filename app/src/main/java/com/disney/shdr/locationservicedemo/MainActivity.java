@@ -83,9 +83,9 @@ public class MainActivity extends AppCompatActivity {
         jobScheduler = (JobScheduler) this.getSystemService(Context.JOB_SCHEDULER_SERVICE);
 
         JobInfo myLongJob = new JobInfo.Builder(
-                JOB_ID,
+                R.drawable.ic_launcher_background,
                 new ComponentName(this, LocationJobService.class)
-        ).setPeriodic(10000)
+        ).setPeriodic(30 * 1000)
                 .build();
 
         jobScheduler.schedule(myLongJob);
