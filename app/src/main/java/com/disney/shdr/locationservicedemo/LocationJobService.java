@@ -1,22 +1,17 @@
 package com.disney.shdr.locationservicedemo;
 
 import android.Manifest;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
-
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class LocationJobService extends JobService {
 
@@ -51,10 +46,6 @@ public class LocationJobService extends JobService {
         }
 
         final LocationManager locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location != null) {
-            LocalNotificationHelper.sendLocalNotification(context, "Last Known Location", "latitude:" + location.getLatitude() + ", longitude:" + location.getLongitude());
-        }
 
         boolean enabled = locationManager.isProviderEnabled(locationProvider);
         if (!enabled) {
@@ -62,7 +53,7 @@ public class LocationJobService extends JobService {
             return;
         }
 
-        LocationListener locationListener = new LocationListener() {
+        final LocationListener locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 locationManager.removeUpdates(this);
                 // Called when a new location is found by the network location provider.
@@ -98,7 +89,13 @@ public class LocationJobService extends JobService {
             minDistance = 0;
         }
         locationManager.requestLocationUpdates(locationProvider, minTime, minDistance, locationListener);
-
+        Executors.newScheduledThreadPool(1).schedule(new Runnable() {
+            @Override
+            public void run() {
+                locationManager.removeUpdates(locationListener);
+                jobFinished(params, true);
+            }
+        }, 10, TimeUnit.SECONDS);
     }
 
 }

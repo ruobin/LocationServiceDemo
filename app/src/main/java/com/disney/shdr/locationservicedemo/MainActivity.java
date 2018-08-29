@@ -17,10 +17,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.app.job.JobScheduler;
 
-import org.w3c.dom.Text;
-
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
 
     public final static String TAG = MainActivity.class.getName();
@@ -46,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         requestGPSLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getCurrentGPSLocation(LocationManager.GPS_PROVIDER, GPSLocationLabel);
+                getCurrentLocation(LocationManager.GPS_PROVIDER, GPSLocationLabel);
             }
         });
 
@@ -54,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         requestNetworkLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getCurrentGPSLocation(LocationManager.NETWORK_PROVIDER, NetworkLocationLabel);
+                getCurrentLocation(LocationManager.NETWORK_PROVIDER, NetworkLocationLabel);
             }
         });
 
@@ -62,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         requestPassiveLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getCurrentGPSLocation(LocationManager.PASSIVE_PROVIDER, PassiveLocationLabel);
+                getCurrentLocation(LocationManager.PASSIVE_PROVIDER, PassiveLocationLabel);
             }
         });
 
@@ -91,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         jobScheduler.schedule(myLongJob);
     }
 
-    public void getCurrentGPSLocation(String locationProvider, final TextView locationLabel) {
+    public void getCurrentLocation(String locationProvider, final TextView locationLabel) {
 
         boolean enabled = locationManager.isProviderEnabled(locationProvider);
         if (!enabled) {
