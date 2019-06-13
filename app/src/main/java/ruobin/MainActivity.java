@@ -1,4 +1,4 @@
-package com.disney.shdr.locationservicedemo;
+package ruobin;
 
 import android.Manifest;
 import android.app.job.JobInfo;
@@ -8,14 +8,16 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.app.job.JobScheduler;
+
+import com.ruobin.locationservicedemo.R;
 
 public class MainActivity extends AppCompatActivity {
 

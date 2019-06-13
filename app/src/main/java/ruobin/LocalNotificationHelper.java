@@ -1,4 +1,4 @@
-package com.disney.shdr.locationservicedemo;
+package ruobin;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
+
+import com.ruobin.locationservicedemo.R;
 
 public class LocalNotificationHelper {
 
